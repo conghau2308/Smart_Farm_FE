@@ -16,7 +16,7 @@ export default function LightControlScreen({ navigation }) {
   useEffect(() => {
     const fetchLightStatus = async () => {
       try {
-        const apiUrl = 'https://io.adafruit.com/api/v2/longthangtran/feeds/iot-led/data';
+        const apiUrl = 'https://io.adafruit.com/api/v2/hoangvyne/feeds/led/data';
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -25,8 +25,8 @@ export default function LightControlScreen({ navigation }) {
           },
         });
         const data = await response.json();
-        if (data && data[0] && data[0].value === "1") {
-          setIsLightOn(true); // Nếu giá trị là "1", đèn LED đang bật
+        if (data && data[0] && data[0].value >= "1") {
+          setIsLightOn(true); // Nếu giá trị là lớn hơn hoặc bằng "1", đèn LED đang bật
         } else {
           setIsLightOn(false); // Nếu giá trị là "0", đèn LED đang tắt
         }
@@ -41,14 +41,14 @@ export default function LightControlScreen({ navigation }) {
   // Hàm bật/tắt đèn LED
   const toggleLight = async () => {
     try {
-      const apiUrl = 'https://io.adafruit.com/api/v2/longthangtran/feeds/iot-led/data';
+      const apiUrl = 'https://io.adafruit.com/api/v2/hoangvyne/feeds/led/data';
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-AIO-Key': AIO_KEY,
         },
-        body: JSON.stringify({ value: isLightOn ? "0" : "1" }), // Gửi giá trị "0" hoặc "1"
+        body: JSON.stringify({ value: isLightOn ? "0" : "100" }), // Gửi giá trị "0" hoặc "1"
       });
 
       if (response.ok) {

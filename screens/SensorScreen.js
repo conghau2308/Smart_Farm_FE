@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { AIO_KEY } from '@env';
 export default function SensorScreen({ navigation }) {
   const [sensorData, setSensorData] = useState([
     {
@@ -56,56 +57,62 @@ export default function SensorScreen({ navigation }) {
   ]);
   
 
-  const fetchSensorData = async () => {
-    try {
-      const endpoints = {
-        temp: "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-temp/data",
-        light:
-          "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-light/data",
-        soil: "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-soil-moisture/data",
-        pump: "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-pump/data",
-        led: "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-led/data",
-        humi: "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-relay/data",
-      };
-  
-      const responses = await Promise.all(
-        Object.values(endpoints).map((url) =>
-          fetch(url).then((res) => res.json())
-        )
-      );
-  
-      
-  
-      const [temp, light, soil, pump, led, humi] = responses.map(
-        (data) => data[0]?.value || "N/A"
-      );
-  
-     
-  
-      setSensorData((prev) =>
-        prev.map((sensor) => {
-          switch (sensor.id) {
-            case "temp":
-              return { ...sensor, value: `${temp}°C` };
-            case "light":
-              return { ...sensor, value: `${light} lux` };
-            case "soil":
-              return { ...sensor, value: `${soil}%` };
-            case "pump":
-              return { ...sensor, value: pump === "1" ? "ON" : "OFF" };
-            case "led":
-              return { ...sensor, value: led === "1" ? "ON" : "OFF" };
-            case "humi":
-              return { ...sensor, value: `${humi}%` };
-            default:
-              return sensor;
-          }
-        })
-      );
-    } catch (error) {
-      console.error("Error fetching sensor data:", error);
-    }
-  };
+
+const fetchSensorData = async () => {
+  try {
+    // Định nghĩa header dùng chung cho tất cả các yêu cầu fetch
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-AIO-Key': AIO_KEY,
+    };
+
+    const endpoints = {
+      temp: "https://io.adafruit.com/api/v2/hoangvyne/feeds/rt/data",
+      light: "https://io.adafruit.com/api/v2/hoangvyne/feeds/lux/data",
+      soil: "https://io.adafruit.com/api/v2/hoangvyne/feeds/sm/data",
+      pump: "https://io.adafruit.com/api/v2/hoangvyne/feeds/iot-pump/data",
+      led: "https://io.adafruit.com/api/v2/hoangvyne/feeds/led/data",
+      humi: "https://io.adafruit.com/api/v2/hoangvyne/feeds/rh/data",
+    };
+
+    // Gửi các yêu cầu fetch song song với header đã định nghĩa
+    const responses = await Promise.all(
+      Object.values(endpoints).map((url) =>
+        fetch(url, { headers }).then((res) => res.json())
+      )
+    );
+
+    // Lấy giá trị từ phản hồi, nếu không có dữ liệu trả về "N/A"
+    const [temp, light, soil, pump, led, humi] = responses.map(
+      (data) => data[0]?.value || "N/A"
+    );
+
+    // Cập nhật trạng thái sensorData với các giá trị mới
+    setSensorData((prev) =>
+      prev.map((sensor) => {
+        switch (sensor.id) {
+          case "temp":
+            return { ...sensor, value: `${temp}°C` };
+          case "light":
+            return { ...sensor, value: `${light} lux` };
+          case "soil":
+            return { ...sensor, value: `${soil}%` };
+          case "pump":
+            return { ...sensor, value: pump === "1" ? "ON" : "OFF" };
+          case "led":
+            return { ...sensor, value: led >= "1" ? "ON" : "OFF" };
+          case "humi":
+            return { ...sensor, value: `${humi}%` };
+          default:
+            return sensor;
+        }
+      })
+    );
+  } catch (error) {
+    console.error("Error fetching sensor data:", error);
+  }
+};
+
 
   useEffect(() => {
     fetchSensorData(); // Initial fetch

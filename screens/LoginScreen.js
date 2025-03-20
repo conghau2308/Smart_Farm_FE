@@ -16,20 +16,20 @@ export default function LoginScreen({ navigation }) {
   const loginUser = useCallback(async () => {
     console.log('username', username);
     console.log('password', password);
-
-    try {
-      const response = await axios.post('http://10.0.2.2:8080/api/auth/login', {
-        username, password
-      });
-      const { data } = response;
-      if (data.success) {
-        navigation.navigate('Sensors')
-      } else {
-        alert('Login failed: ' + data.message);
-      }
-    } catch (error) {
-      console.log(error);
-    }
+    navigation.navigate('Sensors');
+    // try {
+    //   const response = await axios.post('http://10.0.2.2:8080/api/auth/login', {
+    //     username, password
+    //   });
+    //   const { data } = response;
+    //   if (data.success) {
+    //     navigation.navigate('Sensors')
+    //   } else {
+    //     alert('Login failed: ' + data.message);
+    //   }
+    // } catch (error) {
+    //   console.log(error);
+    // }
   }, [username, password])
 
   return (

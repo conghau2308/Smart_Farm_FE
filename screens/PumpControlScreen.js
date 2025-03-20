@@ -21,7 +21,7 @@ export default function PumpControlScreen({ navigation }) {
   const fetchSoilMoisture = async () => {
     try {
       const apiUrl =
-        "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-soil-moisture";
+        "https://io.adafruit.com/api/v2/longthangtran/feeds/sm";
       const response = await fetch(apiUrl, {
         headers: {
           "Content-Type": "application/json",
