@@ -70,7 +70,7 @@ const fetchSensorData = async () => {
       temp: "https://io.adafruit.com/api/v2/hoangvyne/feeds/rt/data",
       light: "https://io.adafruit.com/api/v2/hoangvyne/feeds/lux/data",
       soil: "https://io.adafruit.com/api/v2/hoangvyne/feeds/sm/data",
-      pump: "https://io.adafruit.com/api/v2/hoangvyne/feeds/iot-pump/data",
+      pump: "https://io.adafruit.com/api/v2/hoangvyne/feeds/may-bom/data",
       led: "https://io.adafruit.com/api/v2/hoangvyne/feeds/led/data",
       humi: "https://io.adafruit.com/api/v2/hoangvyne/feeds/rh/data",
     };

@@ -19,52 +19,52 @@ export default function PumpControlScreen({ navigation }) {
   const [hasAlerted, setHasAlerted] = useState(false);
   // Hàm đọc dữ liệu độ ẩm đất từ API
   const fetchSoilMoisture = async () => {
-    try {
-      const apiUrl =
-        "https://io.adafruit.com/api/v2/longthangtran/feeds/sm";
-      const response = await fetch(apiUrl, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-AIO-Key": AIO_KEY ,
-        },
-      });
+    // try {
+    //   const apiUrl =
+    //     "https://io.adafruit.com/api/v2/longthangtran/feeds/sm";
+    //   const response = await fetch(apiUrl, {
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       "X-AIO-Key": AIO_KEY ,
+    //     },
+    //   });
 
-      if (response.ok) {
-        const data = await response.json();
-        const moistureValue = parseFloat(data.last_value);
-        setSoilMoisture(moistureValue);
+    //   if (response.ok) {
+    //     const data = await response.json();
+    //     const moistureValue = parseFloat(data.last_value);
+    //     setSoilMoisture(moistureValue);
 
-        // Kiểm tra điều kiện bật/tắt máy bơm hoặc cảnh báo
-        if (isSoilMoistureControlEnabled) {
-          // Tự động bật máy bơm nếu độ ẩm < 15%
-          if (moistureValue < 15 && !isPumpOn) {
-            turnPumpOn();
-            setHasAlerted(false); 
-          }
+    //     // Kiểm tra điều kiện bật/tắt máy bơm hoặc cảnh báo
+    //     if (isSoilMoistureControlEnabled) {
+    //       // Tự động bật máy bơm nếu độ ẩm < 15%
+    //       if (moistureValue < 15 && !isPumpOn) {
+    //         turnPumpOn();
+    //         setHasAlerted(false); 
+    //       }
   
-          // Hiển thị cảnh báo 1 lần nếu độ ẩm trong khoảng 20% - 30%
-          if (moistureValue >= 20 && moistureValue <= 30 && !hasAlerted) {
-            alert("Độ ẩm đất đạt mức 20%-30%");
-            setHasAlerted(true); // Đặt cờ đã cảnh báo
-          }
+    //       // Hiển thị cảnh báo 1 lần nếu độ ẩm trong khoảng 20% - 30%
+    //       if (moistureValue >= 20 && moistureValue <= 30 && !hasAlerted) {
+    //         alert("Độ ẩm đất đạt mức 20%-30%");
+    //         setHasAlerted(true); // Đặt cờ đã cảnh báo
+    //       }
   
-          // Tự động tắt máy bơm nếu độ ẩm > 30%
-          if (moistureValue > 30 ) {
-            turnPumpOff();
-            setHasAlerted(false); 
-          }
+    //       // Tự động tắt máy bơm nếu độ ẩm > 30%
+    //       if (moistureValue > 30 ) {
+    //         turnPumpOff();
+    //         setHasAlerted(false); 
+    //       }
   
-          // Reset cờ cảnh báo nếu độ ẩm ra ngoài khoảng 20%-30%
-          if (moistureValue < 20 || moistureValue > 30) {
-            setHasAlerted(false);
-          }
-        }
-      } else {
-        console.error("Không thể lấy dữ liệu độ ẩm đất");
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy dữ liệu độ ẩm đất:", error);
-    }
+    //       // Reset cờ cảnh báo nếu độ ẩm ra ngoài khoảng 20%-30%
+    //       if (moistureValue < 20 || moistureValue > 30) {
+    //         setHasAlerted(false);
+    //       }
+    //     }
+    //   } else {
+    //     console.error("Không thể lấy dữ liệu độ ẩm đất");
+    //   }
+    // } catch (error) {
+    //   console.error("Lỗi khi lấy dữ liệu độ ẩm đất:", error);
+    // }
   };
 
   // Hàm bật/tắt máy bơm

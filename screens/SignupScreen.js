@@ -6,25 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from "react-native";
-
-// const registerUser = async (username, email, address, phone, password) => {
-//   try {
-//     const response = await fetch('https://localhost:8080/api/auth/register', {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({ username, email, address, phone, password }),
-//     });
-//     const data = await response.json();
-//     if (data.success) {
-//       alert('Registration successful!');
-//     } else {
-//       alert('Registration failed: ' + data.message);
-//     }
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
+import { registerService } from "../apis/UserService";
 
 export default function SignupScreen({ navigation }) {
 
@@ -34,30 +18,28 @@ export default function SignupScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
-  const registerUser = useCallback(async () => {
-    if (password !== confirmPassword) {
-      Alert.alert('Error comfirm password')
+  const registerUser = async () => {
+    if (!username || !password || !email || !phone) {
+      Alert.alert("Warning", "Please fill all fields");
+      return;
     }
-    console.log('username', username);
-    console.log('password', password);
-    console.log('email', email);
-    console.log('phone', phone);
 
-    try {
-      const response = await axios.post('http://10.0.2.2:8080/api/auth/register', {
-        username, password, email, phone
-      });
-      const { data } = response;
-      if (data.success) {
-        alert('Registration successful!');
-        navigation.navigate('Login');
-      } else {
-        alert('Registration failed: ' + data.message);
-      }
-    } catch (error) {
-      console.log(error);
+    if (password !== confirmPassword) {
+      Alert.alert("Warning", "Password and Confirm Password do not match");
+      return;
     }
-  }, [username, password, email, phone]);
+
+    const response = await registerService(username, password, email, phone);
+    console.log("resopnse", response);
+
+    if (response) {
+      Alert.alert("Success", "Registration successful!");
+      navigation.navigate("Login");
+    }
+    else {
+      Alert.alert("Error", "Registration failed. Please try again.");
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
