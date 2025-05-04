@@ -17,12 +17,14 @@ import AddDeviceScreen from "./screens/AddDeviceScreen";
 import DetailSensorScreen from "./screens/SensorDetailScreen";
 import { AuthProvider } from "./Contexts/AuthContext";
 import AddZoneScreen from "./screens/AddZoneScreen";
+import { SensorProvider } from "./Contexts/SensorContext";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-      <AuthProvider>
+    <AuthProvider>
+      <SensorProvider>
       <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Welcome"
@@ -44,7 +46,8 @@ export default function App() {
         <Stack.Screen name="Sensor Detail" component={DetailSensorScreen} />
         <Stack.Screen name="Add Zone" component={AddZoneScreen} />
       </Stack.Navigator>
-    </NavigationContainer>
+      </NavigationContainer>
+      </SensorProvider>
     </AuthProvider>
   );
 }

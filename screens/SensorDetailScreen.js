@@ -18,9 +18,9 @@ import { ledControlService } from "../apis/DeviceControlService";
 
 export default function DetailSensorScreen({ navigation }) {
     const route = useRoute();
-    const { deviceId, sensorId } = route.params;
+    const { deviceId, sensorId, deviceName } = route.params;
     const [dashboardUrl, setDashboardUrl] = useState(`http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-1m&to=now&var-device_id=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`);
-    const isDevice = sensorId === "led" || sensorId === "pump" ? true : false;
+    const isDevice = deviceName === "LED Light" || deviceName === "Pump" ? true : false;
     const [sensorValue, setSensorValue] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(new Date());
 
@@ -34,6 +34,23 @@ export default function DetailSensorScreen({ navigation }) {
       const url = `http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-${fromDate}&to=now&var-device_id=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`;
       setDashboardUrl(url);
     }
+    const iconDevice = {
+      "Temperature Sensor": "thermometer-outline",
+      "Light Sensor": "sunny-outline",
+      "Soil Moisture Sensor": "leaf-outline",
+      "Pump": "water-outline",
+      "LED Light": "bulb-outline",
+      "Humidity Sensor": "cloud-outline"
+    }
+  
+    const sensorUnits = {
+      "Temperature Sensor": "°C",
+      "Light Sensor": "lux",
+      "Soil Moisture Sensor": "%",
+      "Pump": "",
+      "LED Light": "",
+      "Humidity Sensor": "%"
+    };
 
     useFocusEffect(
       React.useCallback(() => {
@@ -91,7 +108,7 @@ export default function DetailSensorScreen({ navigation }) {
         >
           <Ionicons name="arrow-back" size={24} color="#2E7D32" />
         </TouchableOpacity>
-        <Text style={styles.title}>{sensorId} Insights</Text>
+        <Text style={styles.title}>{deviceName} Insights</Text>
         </View>
         <Text style={styles.subtitle}>
           Last Updated: {lastUpdated.toLocaleTimeString()}
@@ -102,43 +119,48 @@ export default function DetailSensorScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Device Dashboard</Text>
         <View style={styles.lightStatus}>
           <Ionicons
-            name={true ? "bulb" : "bulb-outline"}
+            name={iconDevice[deviceName]}
             size={48}
-            color={true ? "#FFD700" : "#666"}
+            color="#2E7D32"
           />
+
+          <Text style={styles.title}> {deviceName} </Text>
           <Text
             style={[styles.statusText, { color: true ? "#2E7D32" : "#666" }]}
           >
             {isDevice ? (
-                <Text>
-                    {sensorId} is {true ? "ON" : "OFF"}
+                <Text style={{ fontSize: 18 }}>
+                    Current status is: {sensorValue.map((sensor) => sensor.value === 1 ? "ON" : "OFF" ) || "N/A"}
                 </Text>
             ) : (
-                <Text>
-                    {sensorId} value is: {sensorValue.map((sensor) => sensor.value) || "N/A"}
+                <Text style={{ fontSize: 18 }}>
+                    Current value is: {sensorValue.map((sensor) => sensor.value) || "N/A"}
+                    {
+                      sensorUnits[deviceName]
+                    }
                 </Text>
             )}
           </Text>
 
-          {deviceId === 5 && (
+          {isDevice && (
             <TouchableOpacity style={{
-                width: '50%',
+                width: '60%',
                 backgroundColor: '#2E7D32',
                 borderRadius: 10,
                 padding: 10,
                 marginTop: 10,
             }}
-                onPress={() => navigation.navigate(sensorId === "led"
+                onPress={() => navigation.navigate(deviceName === "LED Light"
                     ? "LedControl"
                     : "PumpControl",
-                    { sensorId })}
+                    { deviceId })}
             >
                 <Text style={{
                     color: '#fff',
                     fontSize: 18,
                     fontWeight: 'bold',
                     textAlign: 'center'
-                }}> {sensorId} Control </Text>
+                }}> {deviceName} Control </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -158,25 +180,21 @@ export default function DetailSensorScreen({ navigation }) {
         placeholder="Enter time (e.g., 1s, 2m, 3h, 4d, 5w ...)"
       />
 
-      <TouchableOpacity onPress={handleHistory} style={{
-        width: '20%',
-        backgroundColor: '#2e7d32',
-        padding: 5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: 10,
-        shadowColor: "#000",
-        shadowOffset: {
-          width: 0,
-          height: 2,
-        },
-        shadowOpacity: 0.23,
-        shadowRadius: 2.62,
-        elevation: 4,
+      <View style={{
+        flexDirection: 'column',
+        width: '17%',
+        display: 'flex'
       }}>
-        <Ionicons name="time-outline" size={20} color='#fff' />
-        <Text style={{ fontSize: 18, color: '#fff', textAlign: 'center' }}> View </Text>
+      <TouchableOpacity onPress={handleHistory} style={[styles.buttonChart, { backgroundColor: '#2e7d32', marginBottom: 6}]}>
+        <Ionicons name="time-outline" size={15} color='#fff' />
+        <Text style={{ fontSize: 15, color: '#fff', textAlign: 'center' }}> View </Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.buttonChart, { backgroundColor: '#2ead32'}]}>
+        <Ionicons name="refresh-circle-outline" size={15} color='#fff' />
+        <Text style={{ fontSize: 15, color: '#fff', textAlign: 'center' }}> Reset </Text>
+      </TouchableOpacity>
+      </View>
     </View>
     <View style={{flex: 1}}>
     <WebView
@@ -208,7 +226,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ddd",
   },
   backButton: {
-    marginRight: 15,
+    marginRight: 8,
   },
   title: {
     fontSize: 24,
@@ -255,7 +273,7 @@ const styles = StyleSheet.create({
   },
   input: {
     width: "70%",
-    height: 40,
+    height: 50,
     backgroundColor: "white",
     borderRadius: 10,
     padding: 5,
@@ -263,4 +281,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
   },
+  buttonChart: {
+    width: '100%',
+    padding: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      idth: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
+    justifyContent:'center'
+  }
 });

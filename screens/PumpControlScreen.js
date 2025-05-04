@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Text,
   SafeAreaView,
@@ -9,189 +9,152 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-
+import { AIO_KEY } from '@env';
+import { useFocusEffect, useRoute } from "@react-navigation/native";
+import { getValueOfListSensorservice } from "../apis/SensorService";
+import { SensorContext } from "../Contexts/SensorContext";
+import { getModeByDeviceIdService, updateModeDeviceService } from "../apis/DeviceControlService";
+import axios from "axios";
+import { getThresholdByDeviceAndParam } from "../apis/Thresholdservice";
 export default function PumpControlScreen({ navigation }) {
-  const [isPumpOn, setIsPumpOn] = useState(false);
-  const [isAutomationEnabled, setIsAutomationEnabled] = useState(false);
-  const [isSoilMoistureControlEnabled, setIsSoilMoistureControlEnabled] =
-    useState(false);
-  const [soilMoisture, setSoilMoisture] = useState(50);
-  const [hasAlerted, setHasAlerted] = useState(false);
-  // Hàm đọc dữ liệu độ ẩm đất từ API
-  const fetchSoilMoisture = async () => {
-    // try {
-    //   const apiUrl =
-    //     "https://io.adafruit.com/api/v2/longthangtran/feeds/sm";
-    //   const response = await fetch(apiUrl, {
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       "X-AIO-Key": AIO_KEY ,
-    //     },
-    //   });
+  const [isPumpOn, setIsPumpOn] = useState(null);
+  const route = useRoute();
+  const { deviceId } = route.params;
+  const [sensorValue, setSensorValue] = useState([]);
+  const { soilSensorId } = useContext(SensorContext);
+  const apiUrl = "https://io.adafruit.com/api/v2/hoangvyne/feeds/may-bom/data";
+  const [threshold, setThreshold] = useState(0);
+  const [modeDivice, setModeDevice] = useState("");
+  const [switchValue, setSwitchValue] = useState(false);
 
-    //   if (response.ok) {
-    //     const data = await response.json();
-    //     const moistureValue = parseFloat(data.last_value);
-    //     setSoilMoisture(moistureValue);
 
-    //     // Kiểm tra điều kiện bật/tắt máy bơm hoặc cảnh báo
-    //     if (isSoilMoistureControlEnabled) {
-    //       // Tự động bật máy bơm nếu độ ẩm < 15%
-    //       if (moistureValue < 15 && !isPumpOn) {
-    //         turnPumpOn();
-    //         setHasAlerted(false); 
-    //       }
-  
-    //       // Hiển thị cảnh báo 1 lần nếu độ ẩm trong khoảng 20% - 30%
-    //       if (moistureValue >= 20 && moistureValue <= 30 && !hasAlerted) {
-    //         alert("Độ ẩm đất đạt mức 20%-30%");
-    //         setHasAlerted(true); // Đặt cờ đã cảnh báo
-    //       }
-  
-    //       // Tự động tắt máy bơm nếu độ ẩm > 30%
-    //       if (moistureValue > 30 ) {
-    //         turnPumpOff();
-    //         setHasAlerted(false); 
-    //       }
-  
-    //       // Reset cờ cảnh báo nếu độ ẩm ra ngoài khoảng 20%-30%
-    //       if (moistureValue < 20 || moistureValue > 30) {
-    //         setHasAlerted(false);
-    //       }
-    //     }
-    //   } else {
-    //     console.error("Không thể lấy dữ liệu độ ẩm đất");
-    //   }
-    // } catch (error) {
-    //   console.error("Lỗi khi lấy dữ liệu độ ẩm đất:", error);
-    // }
-  };
-
-  // Hàm bật/tắt máy bơm
-  const togglePump = async () => {
+  const fetchPumpValue = async () => {
     try {
-      const apiUrl =
-        "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-pump/data";
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-AIO-Key": AIO_KEY,
-        },
-        body: JSON.stringify({ value: isPumpOn ? "0" : "1" }),
-      });
+      const res = await getValueOfListSensorservice([deviceId]);
 
-      if (response.ok) {
-        const newState = !isPumpOn;
-        setIsPumpOn(newState);
-        await AsyncStorage.setItem("isPumpOn", JSON.stringify(newState)); // Lưu trạng thái
-      } else {
-        console.error("Không thể bật/tắt máy bơm");
+      if (res) {
+        setIsPumpOn(res[0].value);
       }
-    } catch (error) {
-      console.error("Lỗi khi điều khiển máy bơm:", error);
     }
-  };
+    catch (error) {
+      alert("failed to fetching value of Pump device");
+      console.log("Error fetching value of Pump device: ", error);
+    }
+  }
 
-  const turnPumpOn = async () => {
+  const fetchThreshold = async () => {
     try {
-      const apiUrl =
-        "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-pump/data";
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-AIO-Key": AIO_KEY,
-        },
-        body: JSON.stringify({ value: "1" }),
-      });
-  
-      if (response.ok) {
-        setIsPumpOn(true);
-      } else {
-        console.error("Không thể bật máy bơm");
-      }
-    } catch (error) {
-      console.error("Lỗi khi bật máy bơm:", error);
-    }
-  };
-  
-  const turnPumpOff = async () => {
-    try {
-      const apiUrl =
-        "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-pump/data";
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-AIO-Key": AIO_KEY,
-        },
-        body: JSON.stringify({ value: "0" }),
-      });
-  
-      if (response.ok) {
-        setIsPumpOn(false);
-      } else {
-        console.error("Không thể tắt máy bơm");
-      }
-    } catch (error) {
-      console.error("Lỗi khi tắt máy bơm:", error);
-    }
-  };
+      const res = await getThresholdByDeviceAndParam(deviceId, null);
 
-  const fetchPumpStatus = async () => {
-    try {
-      const apiUrl =
-        "https://io.adafruit.com/api/v2/longthangtran/feeds/iot-pump";
-      const response = await fetch(apiUrl, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-AIO-Key": AIO_KEY,
-        },
-      });
-  
-      if (response.ok) {
-        const data = await response.json();
-        const pumpStatus = data.last_value === "1"; // Kiểm tra trạng thái máy bơm
-        setIsPumpOn(pumpStatus);
-      } else {
-        console.error("Failed to fetch pump status.");
+      if (res) {
+        setThreshold(res[0].max_value);
       }
-    } catch (error) {
-      console.error("Error fetching pump status:", error);
     }
-  };
-  useEffect(()=> {
-    fetchPumpStatus();
-  })
-  // Khôi phục trạng thái từ AsyncStorage khi màn hình được tải
+    catch (error) {
+      console.log("Error fetching threshold: ", error);
+    }
+  }
+
+  const fetchModeDevice = async () => {
+    try {
+      const res = await getModeByDeviceIdService(deviceId);
+
+      if (res) {
+        setModeDevice(res[0].mode)
+        setSwitchValue(res[0].mode === "auto")
+      }
+    }
+    catch (error) {
+      console.log("Error fetching mode device: ", error);
+    }
+  }
+
   useEffect(() => {
-    const loadState = async () => {
-      try {
-        const pumpState = await AsyncStorage.getItem("isPumpOn");
-        const automationState = await AsyncStorage.getItem(
-          "isSoilMoistureControlEnabled"
-        );
-
-        if (pumpState !== null) setIsPumpOn(JSON.parse(pumpState));
-        if (automationState !== null)
-          setIsSoilMoistureControlEnabled(JSON.parse(automationState));
-      } catch (error) {
-        console.error("Lỗi khi tải trạng thái:", error);
-      }
-    };
-
-    loadState();
+    fetchPumpValue();
+    fetchThreshold();
+    fetchModeDevice();
   }, []);
 
-  // Lấy dữ liệu độ ẩm đất định kỳ khi màn hình hiển thị
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchSoilMoisture();
-    }, 5000);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchSensorValue = async () => {
+        if (soilSensorId === null) {
+          console.log("No soil moisture id found");
+          return;
+        }
 
-    return () => clearInterval(interval);
-  }, [isSoilMoistureControlEnabled]);
+        try {
+          const response = await getValueOfListSensorservice([soilSensorId]);
+
+          if (response) {
+            setSensorValue(response);
+          }
+          else {
+            alert("No data found. Please try again later.")
+          }
+        }
+        catch (error) {
+          console.log("Error fetching data:", error)
+        }
+      }
+
+      fetchSensorValue();
+
+      const interval = setInterval(() => {
+        fetchSensorValue();
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }, [])
+  )
+
+  const handleManualPump = async () => {
+    try {
+      await togglePump(!isPumpOn);
+      setIsPumpOn(!isPumpOn);
+    }
+    catch (error) {
+      alert("Cannot control Pump device");
+    }
+  }
+
+  const togglePump = async (isPumpOn) => {
+    try {
+        const response = await axios.post(
+            apiUrl, {
+                value: isPumpOn ? '1' : '0'
+            }, // Gửi giá trị "1" để bật, "0" để tắt
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-AIO-Key': AIO_KEY,
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error("Error controlling pump:", error);
+        throw new Error("Không thể điều khiển máy bơm");
+    }
+  };
+
+  const handleChangeMode = async (value) => {
+    setSwitchValue(value);
+    const newMode = value ? "auto" : "manual";
+    setModeDevice(newMode);
+
+    try {
+      const res = await updateModeDeviceService(deviceId, newMode, "on");
+
+      if (res) {
+        console.log("Update mode successfully");
+      }
+    }
+    catch (error) {
+      console.log("Error updating mode:", error);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -225,7 +188,7 @@ export default function PumpControlScreen({ navigation }) {
             styles.button,
             { backgroundColor: isPumpOn ? "#F44336" : "#4CAF50" },
           ]}
-          onPress={togglePump}
+          onPress={() => handleManualPump()}
         >
           <Text style={styles.buttonText}>
             {isPumpOn ? "Turn Off Pump" : "Turn On Pump"}
@@ -240,20 +203,16 @@ export default function PumpControlScreen({ navigation }) {
           <Text style={styles.automationText}>Enable Soil Moisture Control</Text>
           <Switch
             trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={isSoilMoistureControlEnabled ? "#4CAF50" : "#f4f3f4"}
-            onValueChange={async () => {
-              const newState = !isSoilMoistureControlEnabled;
-              setIsSoilMoistureControlEnabled(newState);
-              await AsyncStorage.setItem(
-                "isSoilMoistureControlEnabled",
-                JSON.stringify(newState)
-              ); // Lưu trạng thái
-            }}
-            value={isSoilMoistureControlEnabled}
+            thumbColor={switchValue ? "#4CAF50" : "#f4f3f4"}
+            onValueChange={ handleChangeMode }
+            value={switchValue}
           />
         </View>
         <Text style={styles.statusText}>
-          Current Soil Moisture: {soilMoisture}%
+          Threshold Of Soil Moisture is: {threshold}%
+        </Text>
+        <Text style={styles.statusText}>
+          Current Soil Moisture: {sensorValue.map((sensor) => sensor.value)}%
         </Text>
       </View>
     </SafeAreaView>
