@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Text,
   SafeAreaView,
@@ -14,56 +14,33 @@ import { AIO_KEY } from '@env';
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { deleteDeviceByNameService, getAllDevicesByZoneNameService } from "../apis/DeviceService";
 import { getValueOfListSensorservice } from "../apis/SensorService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SensorContext } from "../Contexts/SensorContext";
 export default function DeviceScreen({ navigation }) {
-  const [sensorData, setSensorData] = useState([
-    {
-      id: "temp",
-      name: "Temperature",
-      value: "Loading...",
-      icon: "thermometer-outline",
-      status: "Normal",
-    },
-    {
-      id: "light",
-      name: "Light",
-      value: "Loading...",
-      icon: "sunny-outline",
-      status: "Normal",
-    },
-    {
-      id: "soil",
-      name: "Soil Moisture",
-      value: "Loading...",
-      icon: "leaf-outline",
-      status: "Normal",
-    },
-    {
-      id: "pump",
-      name: "Pump Status",
-      value: "Loading...",
-      icon: "water-outline",
-      status: "Normal",
-    },
-    {
-      id: "led",
-      name: "LED Status",
-      value: "Loading...",
-      icon: "bulb-outline",
-      status: "Normal",
-    },
-    {
-      id: "humi",
-      name: "Humidity Status",
-      value: "Loading...",
-      icon: "cloud-outline",
-      status: "Normal",
-    },
-  ]);
+  const [sensorData, setSensorData] = useState([]);
+  const iconDevice = {
+    "Temperature Sensor": "thermometer-outline",
+    "Light Sensor": "sunny-outline",
+    "Soil Moisture Sensor": "leaf-outline",
+    "Pump": "water-outline",
+    "LED Light": "bulb-outline",
+    "Humidity Sensor": "cloud-outline"
+  }
+
+  const sensorUnits = {
+    "Temperature Sensor": "°C",
+    "Light Sensor": "lux",
+    "Soil Moisture Sensor": "%",
+    "Pump": "",
+    "LED Light": "",
+    "Humidity Sensor": "%"
+  };  
 
   const route = useRoute();
   const { zoneId } = route.params;
   const [SensorValue, setSensorValue] = useState({});
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const { updateSoilSensorId, updateLightSensorId } = useContext(SensorContext);
 
   const fetchAllDeviceByZoneName = async () => {
     try {
@@ -144,6 +121,18 @@ useFocusEffect(
 
   }, [sensorData])
 );
+
+  useEffect(() => {
+    const soilSensor = sensorData.find(sensor => sensor.name === "Soil Moisture Sensor");
+    const lightSensor = sensorData.find(sensor => sensor.name === "Light Sensor");
+
+    if (soilSensor) {
+      updateSoilSensorId(soilSensor.device_id)
+    }
+    if (lightSensor) {
+      updateLightSensorId(soilSensor.device_id)
+    }
+  }, [sensorData, updateSoilSensorId, updateSoilSensorId]);
  
 
   return (
@@ -164,12 +153,20 @@ useFocusEffect(
         <View style={styles.gridContainer}>
           {sensorData.map((sensor, index) => (
             <TouchableOpacity key={index} style={styles.card}
-              onPress={() => navigation.navigate("Sensor Detail", { deviceId: sensor.device_id })}
+              onPress={() => navigation.navigate("Sensor Detail", { deviceId: sensor.device_id, deviceName: sensor.name })}
             >
-              <Ionicons name={sensor.icon} size={32} color="#4CAF50" />
+              <Ionicons name={iconDevice[sensor.name]} size={32} color="#4CAF50" />
               <Text style={styles.sensorName}>{sensor.name}</Text>
-              <Text style={styles.sensorValue}>{SensorValue[sensor.device_id] || "Loading..."}</Text>
-              <Text
+              <Text style={styles.sensorValue}> {
+                  sensor.name === "LED Light" || sensor.name === "Pump"
+                  ? SensorValue[sensor.device_id] === 100 ? "ON" : "OFF"
+                  : SensorValue[sensor.device_id]?.toString() || "Loading..."
+                }
+                {
+                  sensorUnits[sensor.name]
+                }
+                </Text>
+              {/* <Text
                 style={[
                   styles.sensorStatus,
                   {
@@ -183,7 +180,7 @@ useFocusEffect(
                 ]}
               >
                 {sensor.status}
-              </Text>
+              </Text> */}
 
               <Text style={{
                 height: 2,
