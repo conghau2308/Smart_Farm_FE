@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import axios from "axios";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Text,
   SafeAreaView,
@@ -9,16 +9,98 @@ import {
   TouchableOpacity,
   TextInput,
   View,
-  ScrollView
+  ScrollView,
+  Alert
 } from "react-native";
+import { updateDeviceByDeviceId, updateDeviceByNameService } from "../apis/DeviceService";
+import { getThresholdByDeviceAndParam, updateThresHoldByDeviceId } from "../apis/Thresholdservice";
 
 export default function EditDeviceScreen() {
     const route = useRoute();
-    const { deviceId } = route.params;
+    const { deviceId, deviceName, deviceType, deviceDataType } = route.params;
 
     const [nameDevice, setNameDevice] = useState("");
     const [threshold, setThresHold] = useState(0);
     const navigation = useNavigation();
+    const [newThreshold, setNewThreshold] = useState(0);
+
+    const isDevice = (type) => {
+      return type === "device" ? true : false;
+    }
+
+    const handleUpdate = async () => {
+      if (!nameDevice) {
+        Alert.alert("Warning", "Please fill in name field to change information.");
+        return;
+      }
+
+      try {
+        const res = await updateDeviceByDeviceId(deviceId, {
+          device_id: deviceId,
+          zone_id: 1,
+          name: nameDevice,
+          data_type: deviceDataType,
+          device_type: deviceType,
+          status: "on"
+        });
+
+        console.log(deviceId);
+
+        if (res) {
+          Alert.alert("Success", `Change name of ${deviceType} successfully.`);
+          setNameDevice("");
+        }
+        else {
+          Alert.alert("Error", "Failed to change name. Please try again later.")
+        }
+      }
+      catch (error) {
+        console.log("Error to change name: ", error);
+      }
+    }
+
+      const fetchThreshold = async () => {
+        try {
+          const res = await getThresholdByDeviceAndParam(deviceId, null);
+
+          if(res) {
+            setThresHold(res[0]?.max_value);
+          }
+        }
+        catch (error) {
+          console.log("Error fetching threshold of device: ", error);
+        }
+      }
+
+    useEffect(() => {
+      fetchThreshold();
+    }, []);
+
+    const handleUpdateThreshold = async () => {
+      if(threshold === newThreshold) {
+        Alert.alert("New threshold value is the same as the current one. Please enter a different value.");
+        return;
+      }
+
+      if(!isFinite(newThreshold)) {
+        Alert.alert("Please enter only integer or float values.");
+        return;
+      }
+
+      try {
+        const value = Number(newThreshold);
+        const res = await updateThresHoldByDeviceId(deviceId, value);
+
+        if (res) {
+          Alert.alert("Update threshold successfully");
+          setNewThreshold(0);
+          fetchThreshold();
+        }
+      }
+      catch (error) {
+        console.log("Error update threshold: ", error);
+      }
+    }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -32,31 +114,64 @@ export default function EditDeviceScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#2E7D32" />
         </TouchableOpacity>
-        <Text style={styles.title}>Edit device {deviceId}</Text>
+        <Text style={styles.title}>Edit {deviceName}</Text>
         </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.formContent}>
       <TextInput
-        style={styles.input}
-        placeholder="Name of device"
+        style={[styles.input, { marginBottom: 15}]}
+        placeholder={isDevice(deviceType) ? "Name of device" : "Name of Sensor"}
         autoCapitalize="words"
         value={nameDevice}
         onChangeText={setNameDevice}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Threshold"
-        keyboardType="numeric"
-        value={threshold}
-        onChangeText={setThresHold}
-      />
-
       <TouchableOpacity
         style={styles.changeButton}
+        onPress={handleUpdate}
       >
         <Text style={styles.buttonText}>Change</Text>
       </TouchableOpacity>
+
+      {isDevice(deviceType) && (
+        <View>
+        <Text style={{
+          fontSize: 16,
+          marginBottom: 5
+        }}>
+          Update Threshold for device:
+        </Text>
+        <View style={{
+          flexDirection: 'row',
+          width: '80%',
+          alignItems: 'center'
+        }}>
+        <TextInput
+        style={[styles.input, {marginRight: 10}]}
+        placeholder={`Current threshold ${threshold}`}
+        keyboardType="numeric"
+        value={newThreshold}
+        onChangeText={setNewThreshold}
+        />
+
+        <TouchableOpacity style={{
+          backgroundColor: '#237d32',
+          height: 40,
+          justifyContent: 'center',
+          padding: 5,
+          borderRadius: 10
+        }}
+          onPress={handleUpdateThreshold}
+        >
+          <Text style={{
+            fontSize: 15,
+            color: '#fff',
+            fontWeight: 'bold'
+          }}> Submit </Text>
+        </TouchableOpacity>
+        </View>
+        </View>
+      )}
       </ScrollView>
 
       <View style={styles.bottomContainer}>
@@ -204,7 +319,7 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         borderRadius: 8,
         padding: 10,
-        marginBottom: 15,
+        // marginBottom: 15,
         borderWidth: 1,
         borderColor: "#ddd",
       },

@@ -9,38 +9,68 @@ import {
   TextInput,
   View,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Menu } from "react-native-paper";
+import { createDeviceService } from "../apis/DeviceService";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function AddDeviceScreen() {
 
     const [nameDevice, setNameDevice] = useState("");
-    const [threshold, setThresHold] = useState(0);
+    const [zoneId, setZoneId] = useState(0);
+    const [dataType, setDataType] = useState("");
+    const [deviceType, setDeviceType] = useState("");
     const navigation = useNavigation();
 
-    const [menuVisible, setMenuVisible] = useState(false);
-const [selectedDevice, setSelectedDevice] = useState("");
+    const listDataType = [
+      "temperature", "luminosity", "soil_moisture", "pump_status", "led_status", "humidity"
+    ];
 
-const openMenu = () => setMenuVisible(true);
-const closeMenu = () => setMenuVisible(false);
+    const listDeviceType = [
+      "sensor", "device"
+    ]
 
+    const handleAddDevice = async () => {
+      if(!zoneId || !nameDevice || !dataType || !deviceType) {
+        Alert.alert("Error", "Please fill all this fields.");
+        return;
+      }
 
-    const [sensorData, setSensorData] = useState([
-        {
-          id: "pump",
-          name: "Pump",
-          value: "Loading...",
-          icon: "water-outline",
-          status: "Normal",
-        },
-        {
-          id: "led",
-          name: "LED",
-          value: "Loading...",
-          icon: "bulb-outline",
-          status: "Normal",
+      if (!isFinite(zoneId)) {
+        Alert.alert("Warning", "Please enter only interger value.");
+        return;
+      }
+
+      if(!listDataType.includes(dataType)) {
+        handleAlertDataType("Invalid input");
+        return;
+      }
+
+      if(!listDeviceType.includes(deviceType)) {
+        handleAlertDeviceType("Invalid input");
+        return;
+      }
+
+      try {
+        const res = await createDeviceService( Number(zoneId), nameDevice, dataType, deviceType, "on" );
+
+        if(res) {
+          console.log(res)
         }
-      ]);
+      }
+      catch (error) {
+        console.log("error add new device: ", error);
+      }
+    }
+
+    const handleAlertDataType = (title) => {
+      Alert.alert(title, "Please enter a valid data type from the list: " + listDataType.join(", "));
+    }
+
+    const handleAlertDeviceType = (title) => {
+      Alert.alert(title, "Please enter a valid device type from the list: " + listDeviceType.join(", "));
+    }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -60,16 +90,51 @@ const closeMenu = () => setMenuVisible(false);
 
       <TextInput
         style={styles.input}
-        placeholder="Threshold"
+        placeholder="Zone ID"
         keyboardType="numeric"
-        value={threshold}
-        onChangeText={setThresHold}
+        value={zoneId}
+        onChangeText={setZoneId}
       />
+
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center'
+      }}>
+      <TextInput
+        style={styles.inputType}
+        placeholder="Data type of device"
+        autoCapitalize="words"
+        value={dataType}
+        onChangeText={setDataType}
+      />
+
+      <TouchableOpacity onPress={() => handleAlertDataType("Information")}>
+        <Ionicons style={{ marginBottom: 15}} name="information-circle" size={23} color="#ff9800" />
+      </TouchableOpacity>
+      </View>
+
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center'
+      }}>
+      <TextInput
+        style={styles.inputType}
+        placeholder="Device type of device"
+        autoCapitalize="words"
+        value={deviceType}
+        onChangeText={setDeviceType}
+      />
+
+      <TouchableOpacity onPress={() => handleAlertDeviceType("Information")}>
+        <Ionicons style={{ marginBottom: 15}} name="information-circle" size={23} color="#ff9800" />
+      </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
         style={styles.changeButton}
+        onPress={handleAddDevice}
       >
-        <Text style={styles.buttonText}>Change</Text>
+        <Text style={styles.buttonText}> Add Device </Text>
       </TouchableOpacity>
       </ScrollView>
 
@@ -214,6 +279,16 @@ const styles = StyleSheet.create({
       },      
       input: {
         width: "80%",
+        height: 50,
+        backgroundColor: "white",
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: "#ddd",
+      },
+      inputType: {
+        width: "73%",
         height: 50,
         backgroundColor: "white",
         borderRadius: 8,

@@ -18,9 +18,9 @@ import { ledControlService } from "../apis/DeviceControlService";
 
 export default function DetailSensorScreen({ navigation }) {
     const route = useRoute();
-    const { deviceId, sensorId, deviceName } = route.params;
-    const [dashboardUrl, setDashboardUrl] = useState(`http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-1m&to=now&var-device_id=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`);
-    const isDevice = deviceName === "LED Light" || deviceName === "Pump" ? true : false;
+    const { deviceId, deviceName, deviceDataType } = route.params;
+    const [dashboardUrl, setDashboardUrl] = useState(`http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-1m&to=now&var-device_id_single=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`);
+    const isDevice = deviceDataType === "led_status" || deviceDataType === "pump_status" ? true : false;
     const [sensorValue, setSensorValue] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(new Date());
 
@@ -31,25 +31,25 @@ export default function DetailSensorScreen({ navigation }) {
         Alert.alert("Warning", "Please enter a time duration (e.g., 1s, 2m, 3h, ...)");
         return;
       }
-      const url = `http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-${fromDate}&to=now&var-device_id=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`;
+      const url = `http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-${fromDate}&to=now&var-device_id_single=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`;
       setDashboardUrl(url);
     }
     const iconDevice = {
-      "Temperature Sensor": "thermometer-outline",
-      "Light Sensor": "sunny-outline",
-      "Soil Moisture Sensor": "leaf-outline",
-      "Pump": "water-outline",
-      "LED Light": "bulb-outline",
-      "Humidity Sensor": "cloud-outline"
+      "temperature": "thermometer-outline",
+      "luminosity": "sunny-outline",
+      "soil_moisture": "leaf-outline",
+      "pump_status": "water-outline",
+      "led_status": "bulb-outline",
+      "humidity": "cloud-outline"
     }
   
     const sensorUnits = {
-      "Temperature Sensor": "°C",
-      "Light Sensor": "lux",
-      "Soil Moisture Sensor": "%",
-      "Pump": "",
-      "LED Light": "",
-      "Humidity Sensor": "%"
+      "temperature": "°C",
+      "luminosity": " lux",
+      "soil_moisture": "%",
+      "pump_status": "",
+      "led_status": "",
+      "humidity": "%"
     };
 
     useFocusEffect(
@@ -82,17 +82,12 @@ export default function DetailSensorScreen({ navigation }) {
       }, [])
     )
 
-    const handleLight = async () => {
-      try {
-        const response = await ledControlService(true);
+    const valueOfDevice = (name, value) => {
+      if(name === "led_status") {
+        return value > 0 ? "ON" : value === 0 ? "OFF" : "N/A";
+      }
 
-        if (response) {
-          console.log("resopnse", response);
-        }
-      }
-      catch (error) {
-        console.log("Error turning on Light:", error);
-      }
+      return value === 1 ? "ON" : value === 0 ? "OFF" : "N/A";
     }
 
   return (
@@ -119,7 +114,7 @@ export default function DetailSensorScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Device Dashboard</Text>
         <View style={styles.lightStatus}>
           <Ionicons
-            name={iconDevice[deviceName]}
+            name={iconDevice[deviceDataType]}
             size={48}
             color="#2E7D32"
           />
@@ -130,13 +125,13 @@ export default function DetailSensorScreen({ navigation }) {
           >
             {isDevice ? (
                 <Text style={{ fontSize: 18 }}>
-                    Current status is: {sensorValue.map((sensor) => sensor.value === 1 ? "ON" : "OFF" ) || "N/A"}
+                    Current status is: {sensorValue.map((sensor) => valueOfDevice(deviceDataType, sensor.value))}
                 </Text>
             ) : (
                 <Text style={{ fontSize: 18 }}>
                     Current value is: {sensorValue.map((sensor) => sensor.value) || "N/A"}
                     {
-                      sensorUnits[deviceName]
+                      sensorUnits[deviceDataType]
                     }
                 </Text>
             )}
@@ -150,7 +145,7 @@ export default function DetailSensorScreen({ navigation }) {
                 padding: 10,
                 marginTop: 10,
             }}
-                onPress={() => navigation.navigate(deviceName === "LED Light"
+                onPress={() => navigation.navigate(deviceDataType === "led_status"
                     ? "LedControl"
                     : "PumpControl",
                     { deviceId })}
@@ -177,7 +172,7 @@ export default function DetailSensorScreen({ navigation }) {
         style={styles.input}
         value={fromDate}
         onChangeText={setFromDate}
-        placeholder="Enter time (e.g., 1s, 2m, 3h, 4d, 5w ...)"
+        placeholder="Enter time (e.g., 1s, 2m, 3h, 4d, ...)"
       />
 
       <View style={{
@@ -190,7 +185,12 @@ export default function DetailSensorScreen({ navigation }) {
         <Text style={{ fontSize: 15, color: '#fff', textAlign: 'center' }}> View </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.buttonChart, { backgroundColor: '#2ead32'}]}>
+      <TouchableOpacity style={[styles.buttonChart, { backgroundColor: '#2ead32'}]}
+        onPress={() => {
+          setDashboardUrl(`http://10.0.2.2:3000/d-solo/bekqce3yrnlkwe/smart-farm-dashboard?orgId=1&from=now-1m&to=now&panelId=1&var-device_id_single=${deviceId}&refresh=5s&panelId=1&fullscreen&theme=light`);
+          setFromDate("");
+        }}
+      >
         <Ionicons name="refresh-circle-outline" size={15} color='#fff' />
         <Text style={{ fontSize: 15, color: '#fff', textAlign: 'center' }}> Reset </Text>
       </TouchableOpacity>

@@ -19,21 +19,21 @@ import { SensorContext } from "../Contexts/SensorContext";
 export default function DeviceScreen({ navigation }) {
   const [sensorData, setSensorData] = useState([]);
   const iconDevice = {
-    "Temperature Sensor": "thermometer-outline",
-    "Light Sensor": "sunny-outline",
-    "Soil Moisture Sensor": "leaf-outline",
-    "Pump": "water-outline",
-    "LED Light": "bulb-outline",
-    "Humidity Sensor": "cloud-outline"
+    "temperature": "thermometer-outline",
+    "luminosity": "sunny-outline",
+    "soil_moisture": "leaf-outline",
+    "pump_status": "water-outline",
+    "led_status": "bulb-outline",
+    "humidity": "cloud-outline"
   }
 
   const sensorUnits = {
-    "Temperature Sensor": "°C",
-    "Light Sensor": "lux",
-    "Soil Moisture Sensor": "%",
-    "Pump": "",
-    "LED Light": "",
-    "Humidity Sensor": "%"
+    "temperature": "°C",
+    "luminosity": " lux",
+    "soil_moisture": "%",
+    "pump_status": "",
+    "led_status": "",
+    "humidity": "%"
   };  
 
   const route = useRoute();
@@ -56,9 +56,15 @@ export default function DeviceScreen({ navigation }) {
     }
   }
 
-  useEffect(() => {
-    fetchAllDeviceByZoneName();
-  }, []);
+  // useEffect(() => {
+  //   fetchAllDeviceByZoneName();
+  // }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchAllDeviceByZoneName();
+    }, [])
+  )
 
   const navigate = useNavigation();
 
@@ -130,9 +136,27 @@ useFocusEffect(
       updateSoilSensorId(soilSensor.device_id)
     }
     if (lightSensor) {
-      updateLightSensorId(soilSensor.device_id)
+      updateLightSensorId(lightSensor.device_id)
     }
-  }, [sensorData, updateSoilSensorId, updateSoilSensorId]);
+  }, [sensorData, updateSoilSensorId, updateLightSensorId]);
+
+  const valueOfDevice = (name, value) => {
+    if (name === "led_status") {
+      if(value > 0) {
+        return "ON";
+      }
+      else return "OFF";
+    }
+
+    if (name === "pump_status") {
+      if(value === 1) {
+        return "ON";
+      }
+      else return "OFF";
+    }
+
+    return value?.toString() || "Loading...";
+  }
  
 
   return (
@@ -153,17 +177,19 @@ useFocusEffect(
         <View style={styles.gridContainer}>
           {sensorData.map((sensor, index) => (
             <TouchableOpacity key={index} style={styles.card}
-              onPress={() => navigation.navigate("Sensor Detail", { deviceId: sensor.device_id, deviceName: sensor.name })}
+              onPress={() => navigation.navigate("Sensor Detail", {
+                deviceId: sensor.device_id,
+                deviceName: sensor.name,
+                deviceDataType: sensor.data_type
+               })}
             >
-              <Ionicons name={iconDevice[sensor.name]} size={32} color="#4CAF50" />
+              <Ionicons name={iconDevice[sensor.data_type]} size={32} color="#4CAF50" />
               <Text style={styles.sensorName}>{sensor.name}</Text>
               <Text style={styles.sensorValue}> {
-                  sensor.name === "LED Light" || sensor.name === "Pump"
-                  ? SensorValue[sensor.device_id] === 100 ? "ON" : "OFF"
-                  : SensorValue[sensor.device_id]?.toString() || "Loading..."
+                  valueOfDevice(sensor.data_type, SensorValue[sensor.device_id])
                 }
                 {
-                  sensorUnits[sensor.name]
+                  sensorUnits[sensor.data_type]
                 }
                 </Text>
               {/* <Text
@@ -198,7 +224,12 @@ useFocusEffect(
                 flexDirection: 'row',
                 alignItems: 'center'
               }}
-                onPress={() => navigation.navigate("Edit Device", { deviceName: sensor.name })}
+                onPress={() => navigation.navigate("Edit Device", {
+                  deviceId: sensor.device_id,
+                  deviceName: sensor.name,
+                  deviceType: sensor.device_type,
+                  deviceDataType: sensor.data_type
+                })}
               >
                 <Ionicons name="create-outline" size={15} color="#262626" />
                 <Text> Edit </Text>

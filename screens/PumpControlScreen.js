@@ -6,6 +6,7 @@ import {
   View,
   TouchableOpacity,
   Switch,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import { SensorContext } from "../Contexts/SensorContext";
 import { getModeByDeviceIdService, updateModeDeviceService } from "../apis/DeviceControlService";
 import axios from "axios";
 import { getThresholdByDeviceAndParam } from "../apis/Thresholdservice";
+import { ActivityIndicator } from "react-native-paper";
 export default function PumpControlScreen({ navigation }) {
   const [isPumpOn, setIsPumpOn] = useState(null);
   const route = useRoute();
@@ -26,6 +28,7 @@ export default function PumpControlScreen({ navigation }) {
   const [threshold, setThreshold] = useState(0);
   const [modeDivice, setModeDevice] = useState("");
   const [switchValue, setSwitchValue] = useState(false);
+  const [loading, setLoading] = useState(false);
 
 
   const fetchPumpValue = async () => {
@@ -148,12 +151,25 @@ export default function PumpControlScreen({ navigation }) {
       const res = await updateModeDeviceService(deviceId, newMode, "on");
 
       if (res) {
-        console.log("Update mode successfully");
+        Alert.alert("Change mode successfully");
+
+        if (value) {
+          setLoading(true);
+
+          setTimeout(() => {
+            setLoading(false);
+            fetchPumpValue();
+          }, 9000)
+        }
       }
     }
     catch (error) {
       console.log("Error updating mode:", error);
     }
+  }
+
+  const handleAlert = () => {
+    Alert.alert("You are in auto mode. To switch to manual, please turn off auto mode.")
   }
 
   return (
@@ -170,7 +186,26 @@ export default function PumpControlScreen({ navigation }) {
 
       {/* Điều khiển thủ công */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Manual Control</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between'}}>
+          <Text style={styles.sectionTitle}>Manual Control</Text>
+          {switchValue && 
+            <TouchableOpacity onPress={() => handleAlert()}>
+              <Ionicons name="information-circle" size={24} color="#ff9800" />
+            </TouchableOpacity>
+          }
+        </View>
+        {loading ? (
+          <View style={{
+            height: 100,
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Text style={{
+              fontSize: 16, marginBottom: 10
+            }}> Updating value... Please wait.</Text>
+            <ActivityIndicator size={30} color="#2e7d32" />
+          </View>
+        ) : (
         <View style={styles.pumpStatus}>
           <Ionicons
             name={isPumpOn ? "water" : "water-outline"}
@@ -183,12 +218,14 @@ export default function PumpControlScreen({ navigation }) {
             Pump is {isPumpOn ? "ON" : "OFF"}
           </Text>
         </View>
+        )}
         <TouchableOpacity
           style={[
             styles.button,
             { backgroundColor: isPumpOn ? "#F44336" : "#4CAF50" },
           ]}
           onPress={() => handleManualPump()}
+          disabled={loading || switchValue}
         >
           <Text style={styles.buttonText}>
             {isPumpOn ? "Turn Off Pump" : "Turn On Pump"}
