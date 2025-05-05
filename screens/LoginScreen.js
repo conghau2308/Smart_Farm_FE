@@ -45,8 +45,19 @@ export default function LoginScreen({ navigation }) {
     try {
       const token = await loginService(username, password);
 
+      if (token.message === "Invalid username") {
+        Alert.alert("Error", "Invalid username. Please login again.")
+        return;
+      }
+
+      if(token.message === "Invalid password") {
+        Alert.alert("Error", "Invalid password. Please login again.");
+        return;
+      }
+      
       if (token) {
         login(token);
+        console.log(token);
         navigation.navigate("Main");
       }
     }

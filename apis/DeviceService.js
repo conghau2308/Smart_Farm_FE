@@ -13,11 +13,12 @@ export const getAllDevicesByZoneNameService = async (name) => {
     }
 }
 
-export const createDeviceService = async ( zone_id, name, device_type, status ) => {
+export const createDeviceService = async ( zone_id, name, data_type ,device_type, status ) => {
     try {
-        const res= await axios.post(`${port}/device/create`, {
+        const res = await axios.post(`${port}/device/create`, {
             zone_id,
             name,
+            data_type,
             device_type,
             status
         })
@@ -64,6 +65,19 @@ export const deleteDeviceByNameService = async ( name ) => {
         const res = await axios.delete(`${port}/device/${name}`);
         return res.data;
     }
+    catch (error) {
+        return handleError(error);
+    }
+}
+
+
+export const updateDeviceByDeviceId = async ( device_id, newData ) => {
+    try {
+        const res = await axios.put(`${port}/device/update/${device_id}`, newData);
+
+        return res.data;
+    }
+
     catch (error) {
         return handleError(error);
     }

@@ -18,3 +18,16 @@ export const getThresholdByDeviceAndParam = async ( device_id, parameter ) => {
         return handleError(error);
     }
 }
+
+export const updateThresHoldByDeviceId = async ( device_id, threshold ) => {
+    try {
+        const res = await axios.put(`${port}/device_threshold/update/${device_id}`, {
+            max_value: threshold
+        })
+
+        return res.data;
+    }
+    catch (error) {
+        return handleError(error);
+    }
+}
